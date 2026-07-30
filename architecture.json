@@ -1,0 +1,236 @@
+{
+  "_comment": "Arquitetura do Raycast — prototipo/estudo. Conteudo derivado das fontes listadas em meta.sources. Dados internos sao mockados para fins de prototipacao.",
+  "meta": {
+    "name": "Raycast-clone (prototipo)",
+    "inspiredBy": "Raycast",
+    "version": "0.1.0",
+    "description": "Launcher / command palette de produtividade, keyboard-first, extensivel via extensoes (React + TypeScript) e integrado com AI.",
+    "generatedFor": "prototipo-atalho",
+    "note": "Estudo e prototipo. Nao e o produto oficial Raycast.",
+    "sources": [
+      "https://www.raycast.com/",
+      "https://manual.raycast.com/",
+      "https://developers.raycast.com/",
+      "https://developers.raycast.com/api-reference/user-interface",
+      "https://developers.raycast.com/information/terminology"
+    ]
+  },
+  "platforms": {
+    "mac": {
+      "status": "stable",
+      "technologies": ["native (Swift/AppKit backed)", "React extensions", "Node"],
+      "capabilities": ["root search", "action panel", "extensions", "ai", "window management", "menu bar", "clipboard", "file search", "hotkeys", "hyper key"]
+    },
+    "windows": {
+      "status": "beta",
+      "technologies": ["native", "React extensions"],
+      "capabilities": ["root search", "action panel", "extensions", "ai", "window management"]
+    },
+    "ios": {
+      "status": "stable",
+      "technologies": ["native iOS keyboard", "widgets"],
+      "capabilities": ["keyboard", "widgets & controls", "apple shortcuts", "share extension"]
+    }
+  },
+  "product": {
+    "pitch": "Your shortcut to everything - a collection of powerful productivity tools all within an extendable launcher.",
+    "positioning": "Substitui o Spotlight / launchers tradicionais; centraliza apps, arquivos, automacoes e AI num unico ponto de entrada pelo teclado.",
+    "audience": ["developers", "designers", "productivity power users", "teams"],
+    "values": ["Fast (think in milliseconds)", "Ergonomic (keyboard first)", "Native (pure performance)", "Reliable (99.8% crash-free)"],
+    "plans": {
+      "free": "core launcher features, clipboard history (3 months), 50 AI messages, custom extensions, dev tooling",
+      "pro": "unlimited clipboard history, cloud sync, unlimited notes, full AI features, themes",
+      "teams": "shared extensions, private store, roles & permissions, collaboration",
+      "enterprise": "sso, governance, billing centralizado"
+    },
+    "flagshipIntegrations": ["Linear", "Google Translate", "Spotify", "Arc", "TinyPNG", "1Password", "JIRA", "Slack", "Zoom", "Notion", "Todoist", "Obsidian", "Google Chrome", "CleanShot X"]
+  },
+  "launcher": {
+    "window": {
+      "description": "Janela centralizada compacta que abre com a hotkey global; fecha com Esc.",
+      "globalHotkey": "configurable (ex.: Option+Cmd+Space)",
+      "behavior": "pops over all apps; dismisses on blur/esc; stays open option"
+    },
+    "searchBar": {
+      "description": "Campo de busca no topo; entrada universal para apps, comandos, extensoes, arquivos, snippets, quicklinks, calculo, etc.",
+      "features": ["fuzzy match", "recency/frecency ranking", "alfabetico/categoria", "inline calculator", "inline translation", "dynamic placeholders"]
+    },
+    "rootSearch": {
+      "resultTypes": [
+        { "type": "application", "source": "installed apps" },
+        { "type": "command", "source": "built-in + extensions" },
+        { "type": "file", "source": "file search index" },
+        { "type": "extension", "source": "installed / store" },
+        { "type": "snippet", "source": "user snippets" },
+        { "type": "quicklink", "source": "user quicklinks" },
+        { "type": "clipboardItem", "source": "clipboard history" },
+        { "type": "calculatorResult", "source": "evaluated expression" },
+        { "type": "aiResult", "source": "quick AI" }
+      ],
+      "ranking": "frecency + recency + keyword/alias match"
+    },
+    "actionPanel": {
+      "trigger": "Cmd+K (Mac) / Ctrl+K (Windows)",
+      "position": "bottom-right overlay",
+      "description": "Lista de Actions disponiveis para o item selecionado; cada action pode ter atalho de teclado.",
+      "commonActions": ["Open", "Run", "Copy", "Reveal in Finder", "Copy Path", "Edit", "Delete", "Pin to Top", "Show Details", "Assign Hotkey", "Set Alias", "Ask AI"]
+    },
+    "aliasesAndHotkeys": {
+      "aliases": "Palavras-chave curtas atribuidas a comandos/apps para acionar via root search.",
+      "hotkeys": "Atalhos globais que disparam um comando diretamente (sem abrir root search).",
+      "hyperKey": "Capacidade de remapear caps lock como modifier (hyper) para atalhos."
+    },
+    "keyboardShortcuts": "Setas (navegar), Enter (executar acao primaria), Tab (alternative action), Esc (fechar/voltar), Cmd+K (action panel).",
+    "settings": {
+      "categories": ["general", "extensions", "ai", "snippets", "quicklinks", "clipboard", "hotkeys", "appearance/themes", "advanced"]
+    },
+    "importExport": "Importar/exportar configuracoes (snippets, quicklinks, comandos).",
+    "navigation": {
+      "description": "Stack de navegacao interna para empilhar comandos/views; comando pode push/pop/popToRoot.",
+      "commands": ["push(command)", "pop()", "popToRoot()", "clearSearch()"]
+    }
+  },
+  "coreFeatures": [
+    { "id": "snippets", "name": "Snippets", "category": "productivity", "description": "Expansao de texto: digite um keyword e o conteudo do snippet e inserido no app ativo.", "inputs": ["keyword", "text/clipboard payload", "dynamic placeholders"], "outputs": ["expanded text inserted into focused field"], "shortcut": "trigger by typing keyword anywhere", "dependencies": ["dynamic placeholders"] },
+    { "id": "quicklinks", "name": "Quicklinks", "category": "productivity", "description": "Atalhos para abrir URLs/apps/acao com argumentos e placeholders; substitui abas fixas.", "inputs": ["keyword/alias", "arguments", "placeholders"], "outputs": ["opens url/app/deep link preenchido"], "shortcut": "alias na root search ou hotkey", "dependencies": ["dynamic placeholders"] },
+    { "id": "clipboardHistory", "name": "Clipboard History", "category": "productivity", "description": "Historico persistente do clipboard com preview, busca e pinagem.", "inputs": ["clipboard events", "query"], "outputs": ["re-insercao de trecho na app ativa"], "shortcut": "root search -> Clipboard History", "dependencies": ["storage", "search"] },
+    { "id": "notes", "name": "Notes", "category": "productivity", "description": "Notas flutuantes (floating) rapidas capturadas durante o trabalho.", "inputs": ["text"], "outputs": ["floating note window pinned over apps"], "shortcut": "open via root search", "dependencies": ["storage", "themes"] },
+    { "id": "focus", "name": "Focus", "category": "productivity", "description": "Bloqueio de distracoes / sessoes de foco por tempo.", "inputs": ["duration", "blocked apps/sites"], "outputs": ["focus session with blocking + timer + menu bar indicator"], "shortcut": "root search -> Focus", "dependencies": ["timers", "system commands"] },
+    { "id": "fileSearch", "name": "File Search", "category": "system", "description": "Busca de arquivos com acoes (open, reveal, copy path).", "inputs": ["query", "scope filters"], "outputs": ["file result list with actions"], "shortcut": "root search -> File Search", "dependencies": ["indexing", "navigation"] },
+    { "id": "extensions", "name": "Extensions", "category": "platform", "description": "Adicionam funcionalidade via Store/privado; construidas com React + TypeScript + Node.", "inputs": ["manifest (package.json)", "commands", "tools"], "outputs": ["commands/tools disponiveis no launcher e AI"], "shortcut": "root search -> Store / Manage Extensions", "dependencies": ["extensionSystem", "store"] },
+    { "id": "translate", "name": "Translate", "category": "utility", "description": "Traducao inline na search bar (ex.: 'en pt hello').", "inputs": ["source phrase", "target language"], "outputs": ["translated text + copy/insert actions"], "shortcut": "root search prefix", "dependencies": ["ai", "network"] },
+    { "id": "emojiSymbols", "name": "Emoji & Symbols", "category": "utility", "description": "Busca e insercao de emojis/simbolos.", "inputs": ["query"], "outputs": ["emoji inserted into focused field"], "shortcut": "root search -> Emoji Picker", "dependencies": ["search"] },
+    { "id": "calendar", "name": "Calendar", "category": "utility", "description": "Visualizar proximos eventos e criar reunioes.", "inputs": ["calendar accounts"], "outputs": ["event list + join/quick create actions"], "shortcut": "root search -> Calendar", "dependencies": ["system", "navigation"] },
+    { "id": "calculator", "name": "Calculator", "category": "utility", "description": "Calculadora inline: resultados aparecem conforme voce digita na search bar.", "inputs": ["expression"], "outputs": ["live evaluated result + copy action"], "shortcut": "digitar expressao na root search", "dependencies": ["expression evaluator"] },
+    { "id": "screenshots", "name": "Screenshots", "category": "utility", "description": "Captura de tela e busca de texto dentro de screenshots (OCR).", "inputs": ["region/window selection"], "outputs": ["screenshot file + searchable text index"], "shortcut": "hotkey / root search", "dependencies": ["system commands", "storage", "OCR"] },
+    { "id": "windowManagement", "name": "Window Management", "category": "system", "description": "Posicionar/redimensionar janelas (halves, quarters, maximize, fullscreen, next display).", "inputs": ["window under cursor/frontmost"], "outputs": ["window resized/moved (snap)"], "shortcut": "predefinidos + hotkeys", "dependencies": ["system utilities"] }
+  ],
+  "powerFeatures": [
+    { "id": "hyperKey", "name": "Hyper Key", "description": "Remapeia caps lock como modifier combinado para atalhos." },
+    { "id": "cloudSync", "name": "Cloud Sync", "description": "Sincroniza snippets, quicklinks, comandos e configuracoes entre dispositivos." },
+    { "id": "dynamicPlaceholders", "name": "Dynamic Placeholders", "description": "Tokens em snippets/quicklinks preenchidos em tempo real (data, clipboard, selecionado, etc.)." },
+    { "id": "systemCommands", "name": "System Commands", "description": "Acoes nativas: sleep, lock, empty trash, toggles de bluetooth/wifi/dark mode, etc." },
+    { "id": "scriptCommands", "name": "Script Commands", "description": "Comandos definidos por scripts em qualquer linguagem; saida exibida no launcher." },
+    { "id": "themes", "name": "Themes", "description": "Temas visuais (cores, densidade); custom ou da comunidade." },
+    { "id": "autoQuit", "name": "Auto Quit", "description": "Sair automaticamente de apps ao fechar a janela para liberar recursos." },
+    { "id": "run", "name": "Run", "description": "Execucao rapida de scripts/comandos no estilo runner." },
+    { "id": "games", "name": "Games", "description": "Mini-games acessiveis pelo launcher." }
+  ],
+  "ai": {
+    "overview": "AI integrado ao SO: disponivel onde for util no fluxo de trabalho.",
+    "features": [
+      { "id": "quickAI", "name": "Quick AI", "description": "Pergunta qualquer coisa na root search; combina modelo com web." },
+      { "id": "chat", "name": "AI Chat", "description": "Chat sempre disponivel com contexto do OS, modelos selecionaveis." },
+      { "id": "dictation", "name": "Dictation", "description": "Dictado por voz transcreve/transforma texto em qualquer campo." },
+      { "id": "aiCommands", "name": "AI Commands", "description": "Comandos custom que chamam AI para automatizar tarefas repetitivas." },
+      { "id": "aiExtensions", "name": "AI Extensions", "description": "Extensoes com Tools expostas ao AI (via @mencao); o AI pode chamar os tools." },
+      { "id": "agents", "name": "Agents", "description": "Agentes compostos por prompts/instrucos e ferramentas." },
+      { "id": "skills", "name": "Skills", "description": "Capacidades reutilizaveis atribuidas a prompts/agents." },
+      { "id": "personalization", "name": "Personalization", "description": "Ajuste de tom, contexto, conhecimento pessoal." },
+      { "id": "usageLimits", "name": "Usage Limits", "description": "Limites de mensagens por plano." },
+      { "id": "byok", "name": "Bring Your Own Keys", "description": "Permite usar chaves de provedor proprio." },
+      { "id": "mcp", "name": "Model Context Protocol", "description": "Integracao com servidores MCP para expor tools/contexto ao AI." }
+    ],
+    "entryPoints": ["root search (Quick AI)", "AI Chat window", "AI Commands", "ask action on items"],
+    "privacy": "Politica propria; opcao de processamento local/BYOK conforme plano."
+  },
+  "ios": {
+    "features": [
+      { "id": "keyboard", "name": "Keyboard", "description": "Teclado custom Raycast com snippets e atalhos no iOS." },
+      { "id": "widgets", "name": "Widgets & Controls", "description": "Widgets de tela inicial e controles para lancar acoes." },
+      { "id": "appleShortcuts", "name": "Apple Shortcuts", "description": "Integracao com o app Atalhos da Apple." },
+      { "id": "shareExtension", "name": "Share Extension", "description": "Compartilhar conteudo para comandos Raycast." }
+    ]
+  },
+  "extensionSystem": {
+    "runtime": "Node + React (renderizado para UI nativa)",
+    "language": "TypeScript",
+    "manifest": {
+      "what": "package.json do npm + metadados Raycast",
+      "fields": ["name", "version", "description", "author", "license", "commands (title, description, mode: view/no-view/menu-bar, arguments)", "preferences", "dependencies", "devDependencies"]
+    },
+    "entryPoints": [
+      { "id": "command", "description": "Aparece na root search; usuario interage diretamente.", "modes": ["view (React UI)", "no-view (run e fecha)", "menu-bar"] },
+      { "id": "tool", "description": "Nao aparece na root search; funcionalidade chamada pelo AI (@mencao).", "invokedBy": "AI" }
+    ],
+    "lifecycle": ["install", "load on demand", "run command/tool", "render (React)", "action execution", "unload"],
+    "build": ["bun/npm package", "ray bundle/pack", "ray publish (PR para store)"],
+    "store": "Repositorio publico com milhares de extensoes; revisao por pull request.",
+    "teams": "Extensoes privadas compartilhadas com o time.",
+    "security": "Sandbox/permissoes; segredos via preferences/env/oauth; guidelines de comunidade.",
+    "versioning": "Versionamento semantico; migracoes entre versoes de API.",
+    "devTools": "Developer mode, hot-reloading, logs, debug.",
+    "repo": "https://github.com/raycast/extensions"
+  },
+  "uiComponents": {
+    "rendering": "UI declarada em React e renderizada para UI nativa (Design system).",
+    "highLevel": [
+      { "id": "list", "description": "Lista de itens similares (ex.: todos, resultados).", "props": ["isLoading", "filtering", "sections", "actions"] },
+      { "id": "grid", "description": "Lista com mais espaco para imagem por item (ex.: icones).", "props": ["columns", "aspect", "isLoading"] },
+      { "id": "detail", "description": "Apresenta informacao em markdown/HTML (ex.: detalhe de PR).", "props": ["markdown", "isLoading", "metadata"] },
+      { "id": "form", "description": "Cria/edita conteudo (ex.: reportar bug).", "props": ["fields (TextField, TextArea, Dropdown, DateField, Checkbox, Tag)"] }
+    ],
+    "interaction": {
+      "actionPanel": "Painel (bottom-right) com Actions; cada action pode ter atalho.",
+      "actions": ["Open", "Copy", "Paste", "Push", "OpenWith", "ShowInFinder", "CopyLink", "AddTo", "Alert", "Toast", "Clipboard"]
+    },
+    "style": {
+      "colors": "paleta tokenizada por tema",
+      "icons": "Icon/Image components",
+      "images": "Image, fallbacks"
+    }
+  },
+  "apis": [
+    { "id": "ai", "purpose": "AI: prompts, chat, models, commands, tools." },
+    { "id": "browserExtension", "purpose": "Integracao com browser/tabs." },
+    { "id": "cache", "purpose": "Cache local key-value para extensoes." },
+    { "id": "command", "purpose": "Argumentos, lifecycle, progress, launchProps." },
+    { "id": "clipboard", "purpose": "Ler/escrever clipboard." },
+    { "id": "environment", "purpose": "Info de ambiente de execucao." },
+    { "id": "feedback", "purpose": "Alerts/toasts para o usuario." },
+    { "id": "keyboard", "purpose": "Atalhos e captura de teclas." },
+    { "id": "menuBarCommands", "purpose": "Comandos que vivem na menu bar." },
+    { "id": "oauth", "purpose": "Fluxo OAuth para integracoes." },
+    { "id": "preferences", "purpose": "Preferencias do usuario por extensao." },
+    { "id": "storage", "purpose": "Persistencia local de dados da extensao." },
+    { "id": "systemUtilities", "purpose": "Acoes nativas do OS (paste, lock, window mgmt)." },
+    { "id": "userInterface", "purpose": "List/Grid/Detail/Form/ActionPanel/Actions." },
+    { "id": "tool", "purpose": "Define Tools para AI chamar." },
+    { "id": "windowManagement", "purpose": "Posicionar/redimensionar janelas." }
+  ],
+  "dataModel": [
+    { "id": "command", "fields": ["id", "name", "title", "subtitle", "icon", "type", "arguments", "mode", "hotkey", "alias", "packageId", "owner"] },
+    { "id": "extension", "fields": ["id", "name", "version", "author", "description", "icon", "commands", "preferences", "categories", "installed", "source(store|private)"] },
+    { "id": "tool", "fields": ["id", "name", "description", "parameters(schema)", "packageId"] },
+    { "id": "action", "fields": ["id", "title", "shortcut", "requiresConfirmation", "onPerform"] },
+    { "id": "snippet", "fields": ["id", "name", "keyword", "text", "placeholders", "hotkey"] },
+    { "id": "quicklink", "fields": ["id", "name", "keyword", "urlTemplate", "placeholders", "application?"] },
+    { "id": "clipboardItem", "fields": ["id", "kind", "content", "timestamp", "pinned", "originApp?"] },
+    { "id": "searchResult", "fields": ["id", "type", "title", "subtitle", "icon", "score", "actions"] },
+    { "id": "preference", "fields": ["id", "name", "label", "type", "default", "required", "data"] },
+    { "id": "theme", "fields": ["id", "name", "appearance", "appearanceOverrides", "colors"] },
+    { "id": "hotkey", "fields": ["modifiers", "key"] },
+    { "id": "note", "fields": ["id", "title", "body", "pinned", "createdAt"] }
+  ],
+  "flows": [
+    { "id": "launchApp", "name": "Launch an app", "steps": ["press global hotkey", "type app name", "arrow to result", "enter -> open"] },
+    { "id": "runSnippet", "name": "Expand a snippet", "steps": ["user focuses a text field", "types snippet keyword", "snippet expands with placeholders resolved", "text inserted"] },
+    { "id": "openQuicklink", "name": "Open a quicklink", "steps": ["press hotkey (or root)", "type alias", "enter -> open url/app with args"] },
+    { "id": "installExtension", "name": "Install extension", "steps": ["open root search -> Store", "search extension", "enter -> install", "commands become available in root search"] },
+    { "id": "aiChat", "name": "AI chat", "steps": ["open root search -> AI Chat (or @mention extension tool)", "send prompt", "ai calls tools if needed", "stream response", "follow-up actions (copy/paste/insert)"] },
+    { "id": "windowManagement", "name": "Snap a window", "steps": ["focus target window", "press prebuilt hotkey (e.g. left half)", "windowManager resizes/positions"] }
+  ],
+  "nonFunctional": {
+    "performance": "Resposta em milissegundos; UI nativa; hot-reload para devs.",
+    "reliability": "99.8% crash-free rate (declarado no site).",
+    "ergonomics": "Keyboard-first; mouse opcional; atalhos por action.",
+    "extensibility": "Plataforma de extensoes (Store) + extensoes privadas (Teams) + scripts + AI tools.",
+    "privacy": "Politica de privacidade/AI; opcoes BYOK; trust center.",
+    "offline": "Funcionalidades nativas offline; algumas extensoes/AI precisam de rede."
+  },
+  "prototypeScope": {
+    "implemented": ["root search window", "search bar + filter", "result list (apps, commands, extensions, snippets, quicklinks, clipboard)", "action panel", "keyboard navigation", "list/grid/detail/form views", "calculator inline", "emoji picker", "clipboard history", "snippets manager", "quicklinks manager", "window management mock", "mini store (mock)", "ai chat (mock)"],
+    "mocked": ["file search (in-memory list)", "store (in-memory list)", "ai responses (canned)", "extensions behavior (static)"],
+    "outOfScope": ["real OAuth", "real AI/network", "real indexing", "cloud sync", "real OS commands"]
+  }
+}

@@ -1,0 +1,290 @@
+- generic [ref=e1]:
+  - generic [ref=e2]: Pressione ⌘K/Ctrl+K para abrir o launcher · esc fecha
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: 🔎
+      - textbox "Pesquisar apps, comandos, extensoes, arquivos..." [active] [ref=e6]
+      - generic [ref=e7]: ⌘K
+    - list [ref=e9]:
+      - listitem [ref=e10]: Applications
+      - listitem [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 📱
+        - generic [ref=e13]:
+          - generic [ref=e14]: Notas
+          - generic [ref=e15]: App
+        - generic [ref=e16]: App
+      - listitem [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: 🎵
+        - generic [ref=e20]:
+          - generic [ref=e21]: Spotify
+          - generic [ref=e22]: App
+        - generic [ref=e23]: App
+      - listitem [ref=e25] [cursor=pointer]:
+        - generic [ref=e26]: 💻
+        - generic [ref=e27]:
+          - generic [ref=e28]: Terminal
+          - generic [ref=e29]: App
+        - generic [ref=e30]:
+          - generic [ref=e31]: App
+          - generic [ref=e32]: ⌃⌥T
+      - listitem [ref=e33] [cursor=pointer]:
+        - generic [ref=e34]: 🗂️
+        - generic [ref=e35]:
+          - generic [ref=e36]: Finder
+          - generic [ref=e37]: App
+        - generic [ref=e38]: App
+      - listitem [ref=e40] [cursor=pointer]:
+        - generic [ref=e41]: ✉️
+        - generic [ref=e42]:
+          - generic [ref=e43]: Mail
+          - generic [ref=e44]: App
+        - generic [ref=e45]: App
+      - listitem [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 🗓️
+        - generic [ref=e49]:
+          - generic [ref=e50]: Calendario
+          - generic [ref=e51]: App
+        - generic [ref=e52]: App
+      - listitem [ref=e54] [cursor=pointer]:
+        - generic [ref=e55]: 📸
+        - generic [ref=e56]:
+          - generic [ref=e57]: Fotos
+          - generic [ref=e58]: App
+        - generic [ref=e59]: App
+      - listitem [ref=e61] [cursor=pointer]:
+        - generic [ref=e62]: ⚙️
+        - generic [ref=e63]:
+          - generic [ref=e64]: Ajustes do Sistema
+          - generic [ref=e65]: App
+        - generic [ref=e66]: App
+      - listitem [ref=e68]: Commands
+      - listitem [ref=e69] [cursor=pointer]:
+        - generic [ref=e70]: 🧮
+        - generic [ref=e71]:
+          - generic [ref=e72]: Calculator
+          - generic [ref=e73]: Calculadora inline na busca
+        - generic [ref=e74]: Command
+      - listitem [ref=e76] [cursor=pointer]:
+        - generic [ref=e77]: 😄
+        - generic [ref=e78]:
+          - generic [ref=e79]: Emoji & Symbols
+          - generic [ref=e80]: Inserir emoji/simbolo
+        - generic [ref=e81]:
+          - generic [ref=e82]: Command
+          - generic [ref=e83]: ⌃⌥E
+      - listitem [ref=e84] [cursor=pointer]:
+        - generic [ref=e85]: 📋
+        - generic [ref=e86]:
+          - generic [ref=e87]: Clipboard History
+          - generic [ref=e88]: Historico do clipboard
+        - generic [ref=e89]:
+          - generic [ref=e90]: Command
+          - generic [ref=e91]: ⌃⌥C
+      - listitem [ref=e92] [cursor=pointer]:
+        - generic [ref=e93]: 🔖
+        - generic [ref=e94]:
+          - generic [ref=e95]: Quicklinks
+          - generic [ref=e96]: Atalhos para URLs/apps
+        - generic [ref=e97]: Command
+      - listitem [ref=e99] [cursor=pointer]:
+        - generic [ref=e100]: ✂️
+        - generic [ref=e101]:
+          - generic [ref=e102]: Snippets
+          - generic [ref=e103]: Expansao de texto
+        - generic [ref=e104]: Command
+      - listitem [ref=e106] [cursor=pointer]:
+        - generic [ref=e107]: 🪟
+        - generic [ref=e108]:
+          - generic [ref=e109]: Window Management
+          - generic [ref=e110]: Posicionar/redimensionar
+        - generic [ref=e111]: Command
+      - listitem [ref=e113] [cursor=pointer]:
+        - generic [ref=e114]: 🛍️
+        - generic [ref=e115]:
+          - generic [ref=e116]: Store
+          - generic [ref=e117]: Instalar extensoes
+        - generic [ref=e118]:
+          - generic [ref=e119]: Command
+          - generic [ref=e120]: ⌃⌥S
+      - listitem [ref=e121] [cursor=pointer]:
+        - generic [ref=e122]: ✨
+        - generic [ref=e123]:
+          - generic [ref=e124]: AI Chat
+          - generic [ref=e125]: Conversar com o assistente
+        - generic [ref=e126]:
+          - generic [ref=e127]: Command
+          - generic [ref=e128]: ⌃⌥A
+      - listitem [ref=e129] [cursor=pointer]:
+        - generic [ref=e130]: 🎯
+        - generic [ref=e131]:
+          - generic [ref=e132]: Focus
+          - generic [ref=e133]: Sessao de foco (mock)
+        - generic [ref=e134]: Command
+      - listitem [ref=e136] [cursor=pointer]:
+        - generic [ref=e137]: 📝
+        - generic [ref=e138]:
+          - generic [ref=e139]: Notes
+          - generic [ref=e140]: Nota flutuante (mock)
+        - generic [ref=e141]: Command
+      - listitem [ref=e143] [cursor=pointer]:
+        - generic [ref=e144]: 🌐
+        - generic [ref=e145]:
+          - generic [ref=e146]: Translate
+          - generic [ref=e147]: Traduzir texto (mock)
+        - generic [ref=e148]: Command
+      - listitem [ref=e150]: Extensions
+      - listitem [ref=e151] [cursor=pointer]:
+        - generic [ref=e152]: 🟦
+        - generic [ref=e153]:
+          - generic [ref=e154]: Linear
+          - generic [ref=e155]: Issues
+        - generic [ref=e156]: Extension
+      - listitem [ref=e158] [cursor=pointer]:
+        - generic [ref=e159]: 🟩
+        - generic [ref=e160]:
+          - generic [ref=e161]: Notion
+          - generic [ref=e162]: Pesquisar/criar paginas
+        - generic [ref=e163]: Extension
+      - listitem [ref=e165] [cursor=pointer]:
+        - generic [ref=e166]: 🟧
+        - generic [ref=e167]:
+          - generic [ref=e168]: Spotify
+          - generic [ref=e169]: Controlar playback
+        - generic [ref=e170]: Extension
+      - listitem [ref=e172] [cursor=pointer]:
+        - generic [ref=e173]: 🟪
+        - generic [ref=e174]:
+          - generic [ref=e175]: 1Password
+          - generic [ref=e176]: Credenciais
+        - generic [ref=e177]: Extension
+      - listitem [ref=e179] [cursor=pointer]:
+        - generic [ref=e180]: ⬛
+        - generic [ref=e181]:
+          - generic [ref=e182]: GitHub
+          - generic [ref=e183]: PRs e issues
+        - generic [ref=e184]: Extension
+      - listitem [ref=e186]: Snippets
+      - listitem [ref=e187] [cursor=pointer]:
+        - generic [ref=e188]: ✏️
+        - generic [ref=e189]:
+          - generic [ref=e190]: endemail
+          - generic [ref=e191]: Snippet · keyword ;end · Obrigado pela atencao. Um abraco, Eduard
+        - generic [ref=e192]: Snippet
+      - listitem [ref=e194] [cursor=pointer]:
+        - generic [ref=e195]: ✏️
+        - generic [ref=e196]:
+          - generic [ref=e197]: endereco
+          - generic [ref=e198]: Snippet · keyword ;addr · 3rd Floor, 1 Ashley Road, WA14 2DT, Altr
+        - generic [ref=e199]: Snippet
+      - listitem [ref=e201] [cursor=pointer]:
+        - generic [ref=e202]: ✏️
+        - generic [ref=e203]:
+          - generic [ref=e204]: meet
+          - generic [ref=e205]: Snippet · keyword ;meet · https://meet.raycast.com/abc
+        - generic [ref=e206]: Snippet
+      - listitem [ref=e208] [cursor=pointer]:
+        - generic [ref=e209]: ✏️
+        - generic [ref=e210]:
+          - generic [ref=e211]: data
+          - generic [ref=e212]: "Snippet · keyword ;date · {date}"
+        - generic [ref=e213]: Snippet
+      - listitem [ref=e215]: Quicklinks
+      - listitem [ref=e216] [cursor=pointer]:
+        - generic [ref=e217]: 🔗
+        - generic [ref=e218]:
+          - generic [ref=e219]: github-me
+          - generic [ref=e220]: "Quicklink · gh · https://github.com/{query}"
+        - generic [ref=e221]: Quicklink
+      - listitem [ref=e223] [cursor=pointer]:
+        - generic [ref=e224]: 🔗
+        - generic [ref=e225]:
+          - generic [ref=e226]: raycast docs
+          - generic [ref=e227]: Quicklink · docs · https://developers.raycast.com/
+        - generic [ref=e228]: Quicklink
+      - listitem [ref=e230] [cursor=pointer]:
+        - generic [ref=e231]: 🔗
+        - generic [ref=e232]:
+          - generic [ref=e233]: youtube
+          - generic [ref=e234]: "Quicklink · yt · https://www.youtube.com/results?search_query={query}"
+        - generic [ref=e235]: Quicklink
+      - listitem [ref=e237] [cursor=pointer]:
+        - generic [ref=e238]: 🔗
+        - generic [ref=e239]:
+          - generic [ref=e240]: gmail
+          - generic [ref=e241]: Quicklink · gm · https://mail.google.com/
+        - generic [ref=e242]: Quicklink
+      - listitem [ref=e244] [cursor=pointer]:
+        - generic [ref=e245]: 🔗
+        - generic [ref=e246]:
+          - generic [ref=e247]: claude
+          - generic [ref=e248]: Quicklink · ask · https://claude.com/
+        - generic [ref=e249]: Quicklink
+      - listitem [ref=e251]: Clipboard History
+      - listitem [ref=e252] [cursor=pointer]:
+        - generic [ref=e253]: 📋
+        - generic [ref=e254]:
+          - generic [ref=e255]: https://www.raycast.com/
+          - generic [ref=e256]: agora · Safari
+        - generic [ref=e257]: Clipboard
+      - listitem [ref=e259] [cursor=pointer]:
+        - generic [ref=e260]: 📋
+        - generic [ref=e261]:
+          - generic [ref=e262]: const plan = await exec(...)
+          - generic [ref=e263]: 2 min · Terminal
+        - generic [ref=e264]: Clipboard
+      - listitem [ref=e266] [cursor=pointer]:
+        - generic [ref=e267]: 📋
+        - generic [ref=e268]:
+          - generic [ref=e269]: Eduardo de Lima
+          - generic [ref=e270]: 10 min · Notas
+        - generic [ref=e271]: Clipboard
+      - listitem [ref=e273] [cursor=pointer]:
+        - generic [ref=e274]: 📋
+        - generic [ref=e275]:
+          - generic [ref=e276]: error_code=42
+          - generic [ref=e277]: 1 h · Terminal
+        - generic [ref=e278]: Clipboard
+      - listitem [ref=e280] [cursor=pointer]:
+        - generic [ref=e281]: 📋
+        - generic [ref=e282]:
+          - generic [ref=e283]: 99.8% crash-free rate
+          - generic [ref=e284]: 3 h · Raycast
+        - generic [ref=e285]: Clipboard
+      - listitem [ref=e287]: Files (mock)
+      - listitem [ref=e288] [cursor=pointer]:
+        - generic [ref=e289]: 📄
+        - generic [ref=e290]:
+          - generic [ref=e291]: README.md
+          - generic [ref=e292]: ~/projetos/prototipo-atalho
+        - generic [ref=e293]: File
+      - listitem [ref=e295] [cursor=pointer]:
+        - generic [ref=e296]: 📄
+        - generic [ref=e297]:
+          - generic [ref=e298]: index.html
+          - generic [ref=e299]: ~/projetos/prototipo-atalho
+        - generic [ref=e300]: File
+      - listitem [ref=e302] [cursor=pointer]:
+        - generic [ref=e303]: 📄
+        - generic [ref=e304]:
+          - generic [ref=e305]: architecture.json
+          - generic [ref=e306]: ~/projetos/prototipo-atalho
+        - generic [ref=e307]: File
+      - listitem [ref=e309] [cursor=pointer]:
+        - generic [ref=e310]: 📄
+        - generic [ref=e311]:
+          - generic [ref=e312]: IDEA.md
+          - generic [ref=e313]: ~/projetos/prototipo-atalho
+        - generic [ref=e314]: File
+      - listitem [ref=e316] [cursor=pointer]:
+        - generic [ref=e317]: 📷
+        - generic [ref=e318]:
+          - generic [ref=e319]: captura.png
+          - generic [ref=e320]: ~/Imagens
+        - generic [ref=e321]: File
+    - generic [ref=e323]:
+      - generic [ref=e324]:
+        - generic [ref=e325]: ↑↓ navegar
+        - generic [ref=e326]: ↵ abrir
+        - generic [ref=e327]: ⌘K actions
+        - generic [ref=e328]: esc fechar
+      - generic [ref=e329]: 43 resultado(s)
