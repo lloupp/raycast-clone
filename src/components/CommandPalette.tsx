@@ -1,23 +1,93 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Fuse from "fuse.js";
 import { Search } from "lucide-react";
-import { mockCommands, type Command } from "../data/mockCommands";
+import { AppWindow } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { LogicalSize } from "@tauri-apps/api/dpi";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { quicklinks, type Command } from "../data/commands";
 
-const fuse = new Fuse(mockCommands, {
-  keys: ["title", "subtitle", "group"],
-  threshold: 0.35,
-});
+/** Espelha `AppEntry` em `src-tauri/src/lib.rs`. */
+type AppEntry = {
+  id: string;
+  name: string;
+  subtitle: string;
+  argv: string[];
+};
+
+const WINDOW_WIDTH = 640;
+/** `p-2` no App, dos dois lados. */
+const WINDOW_PADDING = 16;
+
+async function hideWindow() {
+  try {
+    await getCurrentWindow().hide();
+  } catch (err) {
+    console.error("falha ao esconder a janela:", err);
+  }
+}
 
 export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [apps, setApps] = useState<Command[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    invoke<AppEntry[]>("list_apps")
+      .then((entries) =>
+        setApps(
+          entries.map((entry) => ({
+            id: `app:${entry.id}`,
+            title: entry.name,
+            subtitle: entry.subtitle,
+            icon: AppWindow,
+            group: "Aplicativos",
+            action: { kind: "launch", argv: entry.argv },
+          })),
+        ),
+      )
+      .catch((err) => console.warn("nao foi possivel listar aplicativos:", err));
+  }, []);
+
+  const commands = useMemo(() => [...apps, ...quicklinks], [apps]);
+
+  const fuse = useMemo(
+    () => new Fuse(commands, { keys: ["title", "subtitle", "group"], threshold: 0.35 }),
+    [commands],
+  );
 
   const results = useMemo<Command[]>(() => {
-    if (!query.trim()) return mockCommands;
+    if (!query.trim()) return commands;
     return fuse.search(query).map((r) => r.item);
-  }, [query]);
+  }, [query, commands, fuse]);
+
+  // A janela acompanha a altura da lista, ate o teto definido por `max-h`.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    let window_;
+    try {
+      window_ = getCurrentWindow();
+    } catch (err) {
+      console.warn("API de janela indisponivel:", err);
+      return;
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      const height = Math.ceil(entry.contentRect.height) + WINDOW_PADDING;
+      void window_
+        .setSize(new LogicalSize(WINDOW_WIDTH, height))
+        .catch((err) => console.error("falha ao redimensionar:", err));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -26,6 +96,47 @@ export function CommandPalette() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // A janela e reaproveitada entre aberturas: limpa a busca ao reganhar foco.
+  // Fora do Tauri (ex.: `npm run dev` no navegador) a API nao existe; ignora.
+  useEffect(() => {
+    let unlisten: UnlistenFn | undefined;
+    let cancelled = false;
+
+    try {
+      void getCurrentWindow()
+        .onFocusChanged(({ payload: focused }) => {
+          if (focused) {
+            setQuery("");
+            inputRef.current?.focus();
+          }
+        })
+        .then((fn) => {
+          if (cancelled) fn();
+          else unlisten = fn;
+        });
+    } catch (err) {
+      console.warn("API de janela indisponivel:", err);
+    }
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
+  async function execute(command: Command) {
+    try {
+      if (command.action.kind === "url") {
+        await openUrl(command.action.url);
+      } else {
+        await invoke("launch_app", { argv: command.action.argv });
+      }
+      await hideWindow();
+    } catch (err) {
+      console.error(`falha ao executar \`${command.id}\`:`, err);
+    }
+  }
 
   useEffect(() => {
     const activeEl = listRef.current?.querySelector(`[data-index="${activeIndex}"]`);
@@ -42,17 +153,21 @@ export function CommandPalette() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       const selected = results[activeIndex];
-      if (selected) console.log("execute:", selected.id);
+      if (selected) void execute(selected);
     } else if (e.key === "Escape") {
       e.preventDefault();
       setQuery("");
+      void hideWindow();
     }
   }
 
   let lastGroup = "";
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900/80 shadow-2xl backdrop-blur-xl">
+    <div
+      ref={rootRef}
+      className="flex max-h-[384px] w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900/80 shadow-2xl backdrop-blur-xl"
+    >
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
         <Search className="h-4 w-4 shrink-0 text-neutral-400" />
         <input
@@ -67,7 +182,7 @@ export function CommandPalette() {
         />
       </div>
 
-      <div ref={listRef} className="flex-1 overflow-y-auto px-2 py-2">
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {results.length === 0 && (
           <div className="px-3 py-8 text-center text-sm text-neutral-500">
             Nenhum resultado encontrado
@@ -89,7 +204,7 @@ export function CommandPalette() {
               <div
                 data-index={index}
                 onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => console.log("execute:", command.id)}
+                onClick={() => void execute(command)}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${
                   index === activeIndex ? "bg-white/10" : ""
                 }`}

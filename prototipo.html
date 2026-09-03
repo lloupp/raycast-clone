@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototipo - estilo Raycast</title>
+<style>
+  :root{
+    --bg:#1d1d1f; --win:#2a2a2e; --win2:#333337; --border:#3a3a3f;
+    --text:#f5f5f7; --dim:#9aa0aa; --dimmer:#6f7480;
+    --selected:#3b3b40; --accent:#ff6363; --accent-soft:rgba(255,99,99,.16);
+    --tag-bg:#3a3a40; --radius:12px; --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text); -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #2b2b30, transparent 60%),
+      radial-gradient(1000px 700px at 100% 110%, #23232a, transparent 55%),
+      var(--bg);
+    display:flex; align-items:flex-start; justify-content:center; min-height:100vh;
+    padding:8vh 16px;
+  }
+  #hint{
+    position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+    font-size:12px; color:var(--dim); background:rgba(0,0,0,.35);
+    padding:6px 12px; border:1px solid var(--border); border-radius:999px;
+    backdrop-filter:blur(6px); user-select:none; white-space:nowrap;
+  }
+  #hint kbd{font:var(--mono); background:#3a3a40; color:#fff; border-radius:4px; padding:1px 6px; margin:0 2px}
+
+  /* Launcher window */
+  #launcher{
+    width:720px; max-width:96vw; background:var(--win);
+    border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:0 24px 80px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.03) inset;
+    overflow:hidden; display:flex; flex-direction:column; position:relative;
+  }
+  .searchbar{ display:flex; align-items:center; gap:10px; padding:14px 16px; background:var(--win2) }
+  .searchbar .ico{ font-size:18px; opacity:.9 }
+  .searchbar input{
+    flex:1; background:transparent; border:0; outline:0; color:var(--text);
+    font-size:16px; caret-color:var(--accent); padding:2px 0;
+  }
+  .searchbar input::placeholder{ color:var(--dimmer) }
+  .searchbar .kbd{ font:var(--mono); font-size:11px; color:var(--dim);
+    border:1px solid var(--border); border-radius:6px; padding:2px 6px }
+  #view-title{ padding:8px 14px; font-size:12px; color:var(--dim);
+    border-top:1px solid var(--border); display:none; align-items:center; gap:8px }
+  #view-title .back{ cursor:pointer; color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:1px 7px; font-size:11px }
+  #view-title .back:hover{ background:var(--selected) }
+  .scroll{ max-height:62vh; overflow:auto }
+  ul{ list-style:none; margin:0; padding:4px 0 8px }
+  .section{ font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--dimmer); padding:10px 16px 4px; position:sticky; top:0;
+    background:linear-gradient(var(--win),var(--win) 70%,transparent) }
+  .item{ display:flex; align-items:center; gap:12px; padding:8px 16px; cursor:pointer }
+  .item .ico{ font-size:18px; width:24px; text-align:center; flex:0 0 auto }
+  .item .body{ min-width:0; flex:1 }
+  .item .title{ font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .item .subtitle{ font-size:12px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .item .accessory{ font-size:11px; color:var(--dim); display:flex; gap:8px; align-items:center; flex:0 0 auto }
+  .item .tag{ background:var(--tag-bg); border-radius:6px; padding:1px 7px; color:#cdd2da }
+  .item .sk{ font:var(--mono); color:var(--dim) }
+  .item.selected, .item:hover{ background:var(--selected) }
+  .item.selected .tag{ background:#44444a }
+  .footbar{ display:flex; justify-content:space-between; align-items:center;
+    padding:8px 14px; font-size:12px; color:var(--dim); border-top:1px solid var(--border);
+    background:var(--win2) }
+  .footbar .keys span{ margin-right:10px }
+  .footbar kbd{ font:var(--mono); background:#3a3a40; color:#fff; border-radius:4px; padding:1px 5px; margin:0 2px }
+
+  /* Action Panel (overlay bottom-right) */
+  #actions{ position:absolute; right:14px; bottom:48px; width:300px;
+    background:var(--win2); border:1px solid var(--border); border-radius:10px;
+    box-shadow:0 16px 50px rgba(0,0,0,.5); display:none; z-index:5; overflow:hidden }
+  #actions.open{ display:block }
+  #actions .head{ padding:8px 12px; font-size:11px; color:var(--dimmer);
+    text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border) }
+  #actions ul{ margin:0; padding:4px 0 }
+  .act{ display:flex; justify-content:space-between; align-items:center;
+    padding:7px 12px; cursor:pointer; font-size:13px }
+  .act .sk{ font:var(--mono); font-size:11px; color:var(--dim) }
+  .act:hover, .act.selected{ background:var(--selected) }
+
+  /* Grid (Store/Emoji) */
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:12px 16px }
+  .cell{ background:var(--win2); border:1px solid var(--border); border-radius:8px;
+    padding:10px 8px; text-align:center; cursor:pointer; font-size:12px }
+  .cell .big{ font-size:24px; }
+  .cell .name{ margin-top:6px; color:var(--text) }
+  .cell .author{ font-size:10px; color:var(--dim) }
+  .cell.selected, .cell:hover{ border-color:var(--accent); background:var(--selected) }
+  .cell.installed::after{ content:"installed"; display:block; font-size:9px; color:#7ee787; margin-top:2px }
+
+  /* Detail / Window management */
+  .detail{ padding:14px 18px; font-size:13px; line-height:1.6; color:var(--text) }
+  .detail h2{ margin:0 0 6px }
+  .detail .meta{ color:var(--dim); font-size:12px; margin-bottom:12px }
+  .tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:8px 16px 16px }
+  .tile{ background:var(--win2); border:1px solid var(--border); border-radius:8px;
+    padding:14px 6px; text-align:center; cursor:pointer; font-size:12px }
+  .tile .g{ font-size:22px }
+  .tile.selected, .tile:hover{ border-color:var(--accent); background:var(--selected) }
+
+  /* AI chat */
+  .chat{ display:flex; flex-direction:column; gap:10px; padding:12px 16px; max-height:62vh; overflow:auto }
+  .msg{ padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.5; max-width:90% }
+  .msg.user{ align-self:flex-end; background:var(--accent-soft); border:1px solid rgba(255,99,99,.3) }
+  .msg.ai{ align-self:flex-start; background:var(--win2); border:1px solid var(--border) }
+  .msg .who{ font-size:10px; color:var(--dimmer); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em }
+  .chat-input{ display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--border) }
+  .chat-input input{ flex:1; background:var(--win2); border:1px solid var(--border);
+    border-radius:8px; padding:8px 10px; color:var(--text); outline:0; font-size:13px }
+  .chat-input button{ background:var(--accent); color:#fff; border:0; border-radius:8px;
+    padding:0 14px; font-size:13px; cursor:pointer }
+
+  /* Toast */
+  #toast{ position:fixed; bottom:64px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:#11131a; border:1px solid var(--border); color:#fff; padding:9px 14px;
+    border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:.2s; z-index:10 }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0) }
+  .muted{ color:var(--dim); font-style:italic }
+</style>
+</head>
+<body>
+  <div id="hint">Pressione <kbd>⌘K</kbd>/<kbd>Ctrl+K</kbd> para abrir o launcher &middot; <kbd>esc</kbd> fecha</div>
+
+  <div id="launcher">
+    <div class="searchbar">
+      <span class="ico" id="sbar-ico">🔎</span>
+      <input id="search" type="text" placeholder="Pesquisar apps, comandos, extensoes, arquivos..." autocomplete="off" spellcheck="false">
+      <span class="kbd" id="sbar-kbd">⌘K</span>
+    </div>
+    <div id="view-title"><span class="back" id="back">‹ Voltar</span> <span id="vt-name"></span></div>
+    <div class="scroll" id="scroll">
+      <ul id="list"></ul>
+    </div>
+    <div class="footbar">
+      <div class="keys"><span><kbd>↑</kbd><kbd>↓</kbd> navegar</span><span><kbd>↵</kbd> abrir</span><span><kbd>⌘K</kbd> actions</span><span><kbd>esc</kbd> fechar</span></div>
+      <div id="count">0 resultados</div>
+    </div>
+    <div id="actions">
+      <div class="head">Acoes para item selecionado</div>
+      <ul id="action-list"></ul>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- Dados mockados (em memoria) ---------- */
+const DATA = {
+  applications:[
+    {icon:"📱",name:"Notas",sub:"App",sk:""},
+    {icon:"🎵",name:"Spotify",sub:"App",sk:""},
+    {icon:"💻",name:"Terminal",sub:"App",sk:"⌃⌥T"},
+    {icon:"🗂️",name:"Finder",sub:"App",sk:""},
+    {icon:"✉️",name:"Mail",sub:"App",sk:""},
+    {icon:"🗓️",name:"Calendario",sub:"App",sk:""},
+    {icon:"📸",name:"Fotos",sub:"App",sk:""},
+    {icon:"⚙️",name:"Ajustes do Sistema",sub:"App",sk:""},
+  ],
+  commands:[
+    {icon:"🧮",name:"Calculator",sub:"Calculadora inline na busca",type:"calc",sk:""},
+    {icon:"😄",name:"Emoji & Symbols",sub:"Inserir emoji/simbolo",type:"emoji",sk:"⌃⌥E"},
+    {icon:"📋",name:"Clipboard History",sub:"Historico do clipboard",type:"clipboard",sk:"⌃⌥C"},
+    {icon:"🔖",name:"Quicklinks",sub:"Atalhos para URLs/apps",type:"quicklinks",sk:""},
+    {icon:"✂️",name:"Snippets",sub:"Expansao de texto",type:"snippets",sk:""},
+    {icon:"🪟",name:"Window Management",sub:"Posicionar/redimensionar",type:"window",sk:""},
+    {icon:"🛍️",name:"Store",sub:"Instalar extensoes",type:"store",sk:"⌃⌥S"},
+    {icon:"✨",name:"AI Chat",sub:"Conversar com o assistente",type:"ai",sk:"⌃⌥A"},
+    {icon:"🎯",name:"Focus",sub:"Sessao de foco (mock)",type:"focus",sk:""},
+    {icon:"📝",name:"Notes",sub:"Nota flutuante (mock)",type:"notes",sk:""},
+    {icon:"🌐",name:"Translate",sub:"Traduzir texto (mock)",type:"translate",sk:""},
+  ],
+  extensions:[
+    {icon:"🟦",name:"Linear",sub:"Issues",type:"ext"},
+    {icon:"🟩",name:"Notion",sub:"Pesquisar/criar paginas",type:"ext"},
+    {icon:"🟧",name:"Spotify",sub:"Controlar playback",type:"ext"},
+    {icon:"🟪",name:"1Password",sub:"Credenciais",type:"ext"},
+    {icon:"⬛",name:"GitHub",sub:"PRs e issues",type:"ext"},
+  ],
+  snippets:[
+    {icon:"✏️",name:"endemail",kw:";end",text:"Obrigado pela atencao. Um abraco,\nEduardo"},
+    {icon:"✏️",name:"endereco",kw:";addr",text:"3rd Floor, 1 Ashley Road, WA14 2DT, Altrincham"},
+    {icon:"✏️",name:"meet",kw:";meet",text:"https://meet.raycast.com/abc"},
+    {icon:"✏️",name:"data",kw:";date",text:"{date}"},
+  ],
+  quicklinks:[
+    {icon:"🔗",name:"github-me",kw:"gh",url:"https://github.com/{query}",app:"Google Chrome"},
+    {icon:"🔗",name:"raycast docs",kw:"docs",url:"https://developers.raycast.com/",app:"Google Chrome"},
+    {icon:"🔗",name:"youtube",kw:"yt",url:"https://www.youtube.com/results?search_query={query}",app:"Google Chrome"},
+    {icon:"🔗",name:"gmail",kw:"gm",url:"https://mail.google.com/",app:"Google Chrome"},
+    {icon:"🔗",name:"claude",kw:"ask",url:"https://claude.com/",app:"Google Chrome"},
+  ],
+  clipboard:[
+    {icon:"📋",text:"https://www.raycast.com/",when:"agora",app:"Safari"},
+    {icon:"📋",text:"const plan = await exec(...)",when:"2 min",app:"Terminal"},
+    {icon:"📋",text:"Eduardo de Lima",when:"10 min",app:"Notas"},
+    {icon:"📋",text:"error_code=42",when:"1 h",app:"Terminal"},
+    {icon:"📋",text:"99.8% crash-free rate",when:"3 h",app:"Raycast"},
+  ],
+  files:[
+    {icon:"📄",name:"README.md",path:"~/projetos/prototipo-atalho"},
+    {icon:"📄",name:"index.html",path:"~/projetos/prototipo-atalho"},
+    {icon:"📄",name:"architecture.json",path:"~/projetos/prototipo-atalho"},
+    {icon:"📄",name:"IDEA.md",path:"~/projetos/prototipo-atalho"},
+    {icon:"📷",name:"captura.png",path:"~/Imagens"},
+  ],
+  store:[
+    {icon:"🦊",name:"GitLab",author:"raycast"},
+    {icon:"🎯",name:"Figma",author:"raycast"},
+    {icon:"🐘",name:"JIRA",author:"raycast"},
+    {icon:"😺",name:"GitHub",author:"raycast"},
+    {icon:"🧱",name:"Notion",author:"raycast"},
+    {icon:"🟦",name:"Linear",author:"raycast"},
+    {icon:"🎵",name:"Spotify",author:"raycast"},
+    {icon:"🔐",name:"1Password",author:"raycast"},
+    {icon:"💬",name:"Slack",author:"raycast"},
+    {icon:"📅",name:"Calendar",author:"raycast"},
+    {icon:"🧹",name:"CleanShot X",author:"raycast"},
+    {icon:"🔎",name:"Google Search",author:"raycast"},
+  ],
+  emoji:["😀","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","👍","🙏","🎉","🔥","✨","🚀","✅","❤️","🧠","⚡","🛠️","🎨","📋","📌","🔖","💻"],
+  ai:[
+    {who:"ai",text:"Oi! Sou um assistente mockado do prototipo. Pergunte qualquer coisa e eu darei uma resposta de demonstracao."},
+  ],
+  window:[
+    {icon:"▢",label:"Maximize",sk:"⌃⌥M"},{icon:"◧",label:"Left Half",sk:"⌃⌥←"},
+    {icon:"◫",label:"Right Half",sk:"⌃⌥→"},{icon:"NCY",label:"Top Half",sk:"⌃⌥↑"},
+    {icon:"NCU",label:"Bottom Half",sk:"⌃⌥↓"},{icon:"◳",label:"Top Left",sk:""},
+    {icon:"◰",label:"Top Right",sk:""},{icon:"◱",label:"Bottom Left",sk:""},
+    {icon:"◲",label:"Bottom Right",sk:""},{icon:"⛶",label:"Fullscreen",sk:"⌃⌘F"},
+    {icon:"⇆",label:"Next Display",sk:""},{icon:"↩",label:"Undo Last",sk:""},
+  ]
+};
+
+/* ---------- Estado ---------- */
+const state = {
+  open:true, query:"", view:"root", navStack:[], selected:0,
+  items:[], actionOpen:false, actions:[], aiPrompt:""
+};
+const $ = (s)=>document.querySelector(s);
+const el = {
+  launcher:$("#launcher"), search:$("#search"), list:$("#list"),
+  scroll:$("#scroll"), count:$("#count"), actions:$("#actions"),
+  actionList:$("#action-list"), viewTitle:$("#view-title"), vtName:$("#vt-name"),
+  back:$("#back"), toast:$("#toast"), sbarKbd:$("#sbar-kbd"), sbarIco:$("#sbar-ico")
+};
+
+/* ---------- Util ---------- */
+const lc = (s)=>(s||"").toLowerCase();
+function match(query, txt){ const q=lc(query).trim(); if(!q) return true;
+  return lc(txt).includes(q) || lc(txt).replace(/[^a-z0-9]/g,"").includes(q.replace(/[^a-z0-9]/g,"")); }
+let toastT;
+function toast(msg){ el.toast.textContent=msg; el.toast.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>el.toast.classList.remove("show"),1600); }
+function evalExpr(expr){
+  if(!/^[-+/*().\d\s]+$/.test(expr)) return null; if(!expr.trim()) return null;
+  if(!/[\d]/.test(expr)) return null;
+  try{ const r=Function('"use strict";return ('+expr+')')();
+    return (typeof r==="number" && isFinite(r)) ? r : null; }catch(e){ return null; }
+}
+
+/* ---------- Itens por view ---------- */
+function buildRootItems(q){
+  const out=[]; const qq=q.trim();
+  // Calculadora inline
+  const calc=evalExpr(qq);
+  if(calc!==null){ out.push({type:"calc",icon:"🧮",title:`= ${calc}`,subtitle:"Copiar resultado · calculadora inline",tag:"Calculator",value:String(calc)}); }
+  // Quick AI
+  if(qq){ out.push({type:"quickai",icon:"✨",title:`Ask AI: "${qq}"`,subtitle:"Quick AI · combina modelo com web",tag:"AI"}); }
+  // Applications
+  const apps=DATA.applications.filter(a=>match(q,a.name)).map(a=>({type:"app",icon:a.icon,title:a.name,subtitle:a.sub,sk:a.sk,tag:"App",raw:a}));
+  if(apps.length) out.push({type:"section",label:"Applications"});
+  out.push(...apps);
+  // Commands
+  const cmds=DATA.commands.filter(c=>match(q,c.name)).map(c=>({type:"command",icon:c.icon,title:c.name,subtitle:c.sub,sk:c.sk,tag:"Command",raw:c}));
+  if(cmds.length) out.push({type:"section",label:"Commands"});
+  out.push(...cmds);
+  // Extensions
+  const exts=DATA.extensions.filter(e=>match(q,e.name)).map(e=>({type:"ext",icon:e.icon,title:e.name,subtitle:e.sub,sk:"",tag:"Extension",raw:e}));
+  if(exts.length) out.push({type:"section",label:"Extensions"});
+  out.push(...exts);
+  // Snippets
+  const snips=DATA.snippets.filter(s=>match(q,s.name)||match(q,s.kw)).map(s=>({type:"snippet",icon:s.icon,title:`${s.name}`,subtitle:`Snippet · keyword ${s.kw} · ${s.text.slice(0,40)}`,sk:"",tag:"Snippet",raw:s}));
+  if(snips.length) out.push({type:"section",label:"Snippets"});
+  out.push(...snips);
+  // Quicklinks
+  const ql=DATA.quicklinks.filter(k=>match(q,k.name)||match(q,k.kw)).map(k=>({type:"quicklink",icon:k.icon,title:`${k.name}`,subtitle:`Quicklink · ${k.kw} · ${k.url}`,sk:"",tag:"Quicklink",raw:k}));
+  if(ql.length) out.push({type:"section",label:"Quicklinks"});
+  out.push(...ql);
+  // Clipboard
+  if(!qq){ out.push({type:"section",label:"Clipboard History"}); DATA.clipboard.forEach(c=>out.push({type:"clip",icon:c.icon,title:c.text,subtitle:`${c.when} · ${c.app}`,sk:"",tag:"Clipboard",raw:c})); }
+  // Files
+  const files=DATA.files.filter(f=>match(q,f.name)||match(q,f.path)).map(f=>({type:"file",icon:f.icon,title:f.name,subtitle:f.path,sk:"",tag:"File",raw:f}));
+  if(files.length) out.push({type:"section",label:"Files (mock)"});
+  out.push(...files);
+  return out;
+}
+
+function buildViewItems(view,q){
+  const out=[]; const Q=q||"";
+  if(view==="store"){ return DATA.store.filter(e=>match(Q,e.name)||match(Q,e.author)).map(e=>({type:"store-cell",icon:e.icon,title:e.name,subtitle:e.author,raw:e})); }
+  if(view==="emoji"){ return DATA.emoji.map(s=>({type:"emoji-cell",char:s})); }
+  if(view==="snippets"){ const arr=DATA.snippets.filter(s=>match(Q,s.name)||match(Q,s.kw)); if(arr.length)out.push({type:"section",label:"Snippets — keyword dispara a expansao"}); return out.concat(arr.map(s=>({type:"snippet",icon:s.icon,title:s.name,subtitle:`${s.kw} · ${s.text.slice(0,50)}`,tag:"Snippet",raw:s}))); }
+  if(view==="quicklinks"){ const arr=DATA.quicklinks.filter(k=>match(Q,k.name)||match(Q,k.kw)); if(arr.length)out.push({type:"section",label:"Quicklinks — {query} e preenchido"}); return out.concat(arr.map(k=>({type:"quicklink",icon:k.icon,title:k.name,subtitle:`${k.kw} · ${k.url}`,tag:"Quicklink",raw:k}))); }
+  if(view==="clipboard"){ const arr=DATA.clipboard.filter(c=>match(Q,c.text)); if(arr.length)out.push({type:"section",label:"Clipboard History (mock)"}); return out.concat(arr.map(c=>({type:"clip",icon:c.icon,title:c.text,subtitle:`${c.when} · ${c.app}`,tag:"Clipboard",raw:c}))); }
+  if(view==="window"){ return DATA.window.filter(t=>match(Q,t.label)).map(t=>({type:"tile",icon:t.icon,title:t.label,subtitle:t.sk,raw:t})); }
+  if(view==="ai"){ return []; } // render especial
+  return out;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  let items=[];
+  if(state.view==="root"){ items=buildRootItems(state.query); hideViewTitle();
+    el.search.placeholder="Pesquisar apps, comandos, extensoes, arquivos..."; }
+  else {
+    showViewTitle();
+    items=buildViewItems(state.view,state.query);
+    el.search.placeholder="Filtrar "+viewName(state.view)+"...";
+  }
+  state.items=items;
+  // ajusta selecao
+  const selectable=items.map((it,i)=>({it,i})).filter(x=>x.it.type!=="section");
+  if(state.selected>=selectable.length) state.selected=Math.max(0,selectable.length-1);
+
+  if(state.view==="store"||state.view==="emoji") renderGrid();
+  else if(state.view==="window") renderTiles();
+  else if(state.view==="ai") renderChat();
+  else renderList();
+
+  el.count.textContent = (state.view==="ai"?"chat":(selectable.length+" resultado(s)"));
+  renderActions();
+}
+
+function renderList(){
+  el.scroll.classList.remove("grid-scroll");
+  let html="";
+  state.items.forEach((it,i)=>{
+    if(it.type==="section"){ html+=`<li class="section">${it.label}</li>`; return; }
+    const sel=documentNS(i);
+    html+=`<li class="item ${sel?"selected":""}" data-i="${i}" data-type="${it.type}">
+      <span class="ico">${it.icon||""}</span>
+      <span class="body"><div class="title">${esc(it.title)}</div><div class="subtitle">${esc(it.subtitle||"")}</div></span>
+      <span class="accessory">${it.tag?`<span class="tag">${it.tag}</span>`:""}${it.sk?`<span class="sk">${it.sk}</span>`:""}</span>
+    </li>`;
+  });
+  if(!state.items.length){ html=`<li class="item"><span class="body"><div class="title muted">Nada aqui. Digite para pesquisar.</div></span></li>`; }
+  el.scroll.innerHTML="";
+  const ul=document.createElement("ul"); ul.id="list"; ul.innerHTML=html;
+  el.scroll.appendChild(ul); el.list=ul;
+  attach();
+}
+function documentNS(i){ return i===state.selected; }
+
+function renderGrid(){
+  showViewTitle();
+  const cells=state.items.filter(it=>["store-cell","emoji-cell"].includes(it.type));
+  let html=`<div class="grid">`;
+  cells.forEach((c,i)=>{
+    if(c.type==="emoji-cell") html+=`<div class="cell ${i===state.selected?"selected":""}" data-i="${i}" data-type="emoji-cell" style="font-size:22px">${c.char}</div>`;
+    else html+=`<div class="cell ${i===state.selected?"selected":""} ${c.raw._inst?"installed":""}" data-i="${i}" data-type="store-cell">
+      <div class="big">${c.icon}</div><div class="name">${esc(c.title)}</div><div class="author">${esc(c.subtitle||"")}</div></div>`;
+  });
+  html+=`</div>`;
+  el.scroll.innerHTML=html;
+  el.scroll.querySelectorAll(".cell").forEach(node=>{
+    node.onclick=()=>{ state.selected=+node.dataset.i; activate(); };
+  });
+}
+
+function renderTiles(){
+  showViewTitle();
+  let html=`<div class="detail"><h2>Window Management</h2><div class="meta">Posicione a janela ativa. Hotkeys globais opcionais (mock).</div></div><div class="tiles">`;
+  state.items.forEach((t,i)=> html+=`<div class="tile ${i===state.selected?"selected":""}" data-i="${i}" data-type="tile"><div class="g">${t.icon}</div><div>${esc(t.title)}</div><div class="author">${esc(t.subtitle||"")}</div></div>`);
+  html+=`</div>`;
+  el.scroll.innerHTML=html;
+  el.scroll.querySelectorAll(".tile").forEach(node=> node.onclick=()=>{ state.selected=+node.dataset.i; activate(); });
+}
+
+function renderChat(){
+  showViewTitle();
+  let html=`<div class="chat" id="chatbox">`;
+  DATA.ai.forEach(m=> html+=`<div class="msg ${m.who}"><div class="who">${m.who}</div>${esc(m.text)}</div>`);
+  html+=`</div><div class="chat-input"><input id="chatinput" placeholder="Pergunte alguma coisa..." autocomplete="off"><button id="chatsend">Enviar</button></div>`;
+  el.scroll.innerHTML=html;
+  const box=$("#chatbox"), input=$("#chatinput"), btn=$("#chatsend");
+  const send=()=>{ const v=input.value.trim(); if(!v) return; DATA.ai.push({who:"user",text:v}); input.value="";
+    const out=mockAI(v); renderChatReplies(box); setTimeout(()=>{ DATA.ai.push({who:"ai",text:out}); renderChatReplies(box); },420); };
+  btn.onclick=send; input.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); send(); } };
+  setTimeout(()=>input&&input.focus(),30);
+}
+function renderChatReplies(box){
+  box.innerHTML=DATA.ai.map(m=>`<div class="msg ${m.who}"><div class="who">${m.who}</div>${esc(m.text)}</div>`).join("");
+  box.scrollTop=box.scrollHeight;
+}
+function mockAI(q){
+  if(/\?/.test(q)) return `Resposta mockada para: "${q.slice(0,60)}". No prototipo, o AI responderia combinando um modelo com a web (Quick AI).`;
+  return `Entendi: "${q.slice(0,60)}". Sou um assistente mockado do prototipo, sem rede nem modelo real.`;
+}
+
+function showViewTitle(){ el.viewTitle.style.display="flex"; el.vtName.textContent=viewName(state.view); }
+function hideViewTitle(){ el.viewTitle.style.display="none"; }
+function viewName(v){ return ({store:"Store",emoji:"Emoji & Symbols",snippets:"Snippets",quicklinks:"Quicklinks",clipboard:"Clipboard History",window:"Window Management",ai:"AI Chat"})[v]||v; }
+
+function attach(){
+  el.list.querySelectorAll(".item").forEach(node=>{
+    const idx=+node.dataset.i;
+    node.onclick=()=>{ state.selected=idx; if(node.dataset.type!=="section") activate(); };
+    node.onmouseenter=()=>{ state.selected=idx; highlight(); };
+  });
+}
+function highlight(){
+  el.list.querySelectorAll(".item").forEach(n=> n.classList.toggle("selected", +n.dataset.i===state.selected));
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ---------- Action Panel ---------- */
+function actionsFor(it){
+  if(!it || it.type==="section") return [];
+  const base=[{label:"Abrir",sk:"↵",act:()=>activate()}];
+  const copy=[{label:"Copiar",sk:"⌘C",act:()=>doCopy(it)}];
+  switch(it.type){
+    case "calc": return [{label:"Copiar resultado",sk:"↵",act:()=>doCopy(it)},{label:"Copiar expressao",sk:"",act:()=>navigator.clipboard&&navigator.clipboard.writeText(state.query)}];
+    case "quickai": return [{label:"Perguntar ao AI",sk:"↵",act:()=>{
+      state.aiPrompt=it.title.replace(/^Ask AI:\s*/,"").replace(/^"|"$/g,""); pushView("ai"); }}];
+    case "app": return base.concat(copy,[{label:"Definir hotkey",sk:"",act:()=>toast("Hotkey mockado")}]);
+    case "command": return [{label:"Abrir",sk:"↵",act:()=>activate()}].concat(copy);
+    case "ext": return base.concat(copy,[{label:"Abrir detalhes",sk:"",act:()=>toast("Detalhes mock")}]);
+    case "snippet": return copy.concat([{label:"Editar",sk:"",act:()=>pushView("snippets")}]);
+    case "quicklink": return base.concat(copy,[{label:"Abrir no navegador",sk:"",act:()=>toast("Abrir: "+(it.raw.url||"").replace("{query}",state.query))}]);
+    case "clip": return copy.concat([{label:"Fixar (pin)",sk:"",act:()=>toast("Pin mockado")}]);
+    case "file": return base.concat([{label:"Reveal",sk:"⌘R",act:()=>toast("Reveal mockado")},{label:"Copiar caminho",sk:"",act:()=>doCopy(it)}]);
+    case "store-cell": return [{label:it.raw&&it.raw._inst?"Abrir":"Instalar",sk:"↵",act:()=>install(it)}];
+    case "emoji-cell": return [{label:"Copiar emoji",sk:"↵",act:()=>{navigator.clipboard&&navigator.clipboard.writeText(it.char); toast("Copiado: "+it.char);}}];
+    case "tile": return [{label:"Snap janela",sk:"↵",act:()=>toast("Snap: "+it.title+" (mock)")}];
+    default: return base;
+  }
+  function doCopy(o){ const t=o.value||o.raw&&( o.raw.text||o.raw.url||o.raw.path||o.raw.name)||o.title; navigator.clipboard&&navigator.clipboard.writeText(t); toast("Copiado"); }
+  function install(o){ if(o.raw) o.raw._inst=true; toast("Instalando: "+o.title+" (mock)"); render(); }
+}
+function renderActions(){ if(!state.actionOpen){ el.actions.classList.remove("open"); return; }
+  const it=curSelected(); state.actions=actionsFor(it);
+  let html=""; state.actions.forEach((a,i)=> html+=`<li class="act ${i===0?"selected":""}" data-i="${i}"><span>${esc(a.label)}</span><span class="sk">${esc(a.sk||"")}</span></li>`);
+  el.actionList.innerHTML=html;
+  el.actions.classList.add("open");
+  el.actionList.querySelectorAll(".act").forEach(n=> n.onclick=()=>{ const a=state.actions[+n.dataset.i]; if(a) a.act(); state.actionOpen=false; render(); });
+}
+
+/* ---------- Navegacao ---------- */
+function curSelected(){ const sel=state.items.map((it,i)=>({it,i})).find(x=>x.i===state.selected); return sel?sel.it:null; }
+function moveSel(delta){
+  const idxs=state.items.map((it,i)=>({it,i})).filter(x=>x.it.type!=="section").map(x=>x.i);
+  if(!idxs.length) return;
+  const pos=idxs.indexOf(state.selected);
+  let np=pos+delta; np=Math.max(0,Math.min(idxs.length-1,np)); state.selected=idxs[np]??idxs[0];
+  if(state.view==="store"||state.view==="emoji"||state.view==="window"){ render(); }
+  else highlight();
+  scrollIntoView();
+}
+function scrollIntoView(){
+  const node=el.scroll.querySelector(`[data-i="${state.selected}"]`); if(node) node.scrollIntoView({block:"nearest"});
+}
+function pushView(v){ state.navStack.push(state.view); state.view=v; state.selected=0; state.query=""; el.search.value=""; render(); }
+function back(){ state.view=state.navStack.pop()||"root"; state.selected=0; el.search.value=state.view==="root"?"":state.query; render(); el.search.focus(); }
+function activate(){
+  const it=curSelected(); if(!it) return;
+  switch(it.type){
+    case "calc": navigator.clipboard&&navigator.clipboard.writeText(it.value); toast("Copiado: "+it.value); return;
+    case "quickai": state.aiPrompt=""; pushView("ai"); return;
+    case "app": toast("Abrindo: "+it.title+" (mock)"); return;
+    case "command": openCommand(it.raw); return;
+    case "ext": toast("Abrindo extensao: "+it.title); return;
+    case "snippet": navigator.clipboard&&navigator.clipboard.writeText(it.raw.text); toast("Snippet copiado: "+it.raw.kw); return;
+    case "quicklink": toast("Abrindo: "+(it.raw.url||"").replace("{query}",state.query)); return;
+    case "clip": navigator.clipboard&&navigator.clipboard.writeText(it.raw.text); toast("Copiado do clipboard"); return;
+    case "file": toast("Abrir arquivo: "+it.title); return;
+    case "store-cell": install(it); return;
+    case "emoji-cell": navigator.clipboard&&navigator.clipboard.writeText(it.char); toast("Copiado: "+it.char); return;
+    case "tile": toast("Snap: "+it.title); return;
+  }
+  function install(o){ if(o.raw) o.raw._inst=true; toast("Instalando: "+o.title+" (mock)"); render(); }
+}
+function openCommand(c){
+  if(!c) return;
+  const tmap={emoji:"emoji",clipboard:"clipboard",quicklinks:"quicklinks",snippets:"snippets",window:"window",store:"store",ai:"ai",
+    calc:()=>{ toast("Digite uma expressao matematica na busca"); return null; },
+    focus:()=>{ toast("Focus (mock): 25 min"); return null; },
+    notes:()=>{ toast("Nota flutuante (mock)"); return null; },
+    translate:()=>{ toast("Translate (mock) — digite 'en pt ola'"); return null; }};
+  const tv=tmap[c.type];
+  if(typeof tv==="string") pushView(tv);
+  else tv();
+}
+function copy(it){ const t=it.value||it.raw&&(it.raw.text||it.raw.url||it.raw.path||it.raw.name)||it.title; navigator.clipboard&&navigator.clipboard.writeText(t); toast("Copiado"); }
+
+/* ---------- Teclado ---------- */
+document.addEventListener("keydown",(e)=>{
+  const meta=e.metaKey||e.ctrlKey;
+  if(meta && (e.key==="k"||e.key==="K")){ e.preventDefault();
+    if(!state.open){ openLauncher(); }
+    else { state.actionOpen=!state.actionOpen; render(); }
+    return;
+  }
+  if(!state.open) return;
+  if(e.key==="Escape"){ e.preventDefault();
+    if(state.actionOpen){ state.actionOpen=false; render(); }
+    else if(state.view!=="root"){ back(); }
+    else { /* fica aberto no prototipo; esc apenas limpa */ el.search.value=""; state.query=""; render(); }
+    return;
+  }
+  if(state.view==="ai") return; // chat tem o proprio input
+  if(e.key==="ArrowDown"){ e.preventDefault(); moveSel(1); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); moveSel(-1); }
+  else if(e.key==="Enter"){ e.preventDefault(); if(state.actionOpen){ const a=state.actions[0]; if(a) a.act(); state.actionOpen=false; render(); } else activate(); }
+  else if(e.key==="Tab"){ e.preventDefault(); state.actionOpen=true; render(); }
+});
+el.search.addEventListener("input",(e)=>{ state.query=e.target.value; state.selected=0; render(); });
+el.back.addEventListener("click",back);
+
+function openLauncher(){ state.open=true; el.launcher.style.display="flex"; el.search.focus(); render(); }
+function closeLauncher(){ state.open=false; el.launcher.style.display="none"; }
+
+// inicializa
+el.search.focus();
+render();
+</script>
+</body>
+</html>
