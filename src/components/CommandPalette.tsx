@@ -1,11 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Fuse from "fuse.js";
 import { Search } from "lucide-react";
+import { AppWindow } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+import { LogicalSize } from "@tauri-apps/api/dpi";
 import { type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { mockCommands, type Command } from "../data/mockCommands";
+import { quicklinks, type Command } from "../data/commands";
+
+/** Espelha `AppEntry` em `src-tauri/src/lib.rs`. */
+type AppEntry = {
+  id: string;
+  name: string;
+  subtitle: string;
+  argv: string[];
+};
+
+const WINDOW_WIDTH = 640;
+/** `p-2` no App, dos dois lados. */
+const WINDOW_PADDING = 16;
 
 async function hideWindow() {
   try {
@@ -15,21 +29,65 @@ async function hideWindow() {
   }
 }
 
-const fuse = new Fuse(mockCommands, {
-  keys: ["title", "subtitle", "group"],
-  threshold: 0.35,
-});
-
 export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [apps, setApps] = useState<Command[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    invoke<AppEntry[]>("list_apps")
+      .then((entries) =>
+        setApps(
+          entries.map((entry) => ({
+            id: `app:${entry.id}`,
+            title: entry.name,
+            subtitle: entry.subtitle,
+            icon: AppWindow,
+            group: "Aplicativos",
+            action: { kind: "launch", argv: entry.argv },
+          })),
+        ),
+      )
+      .catch((err) => console.warn("nao foi possivel listar aplicativos:", err));
+  }, []);
+
+  const commands = useMemo(() => [...apps, ...quicklinks], [apps]);
+
+  const fuse = useMemo(
+    () => new Fuse(commands, { keys: ["title", "subtitle", "group"], threshold: 0.35 }),
+    [commands],
+  );
 
   const results = useMemo<Command[]>(() => {
-    if (!query.trim()) return mockCommands;
+    if (!query.trim()) return commands;
     return fuse.search(query).map((r) => r.item);
-  }, [query]);
+  }, [query, commands, fuse]);
+
+  // A janela acompanha a altura da lista, ate o teto definido por `max-h`.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    let window_;
+    try {
+      window_ = getCurrentWindow();
+    } catch (err) {
+      console.warn("API de janela indisponivel:", err);
+      return;
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      const height = Math.ceil(entry.contentRect.height) + WINDOW_PADDING;
+      void window_
+        .setSize(new LogicalSize(WINDOW_WIDTH, height))
+        .catch((err) => console.error("falha ao redimensionar:", err));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -72,7 +130,7 @@ export function CommandPalette() {
       if (command.action.kind === "url") {
         await openUrl(command.action.url);
       } else {
-        await invoke("launch_app", { target: command.action.target });
+        await invoke("launch_app", { argv: command.action.argv });
       }
       await hideWindow();
     } catch (err) {
@@ -106,7 +164,10 @@ export function CommandPalette() {
   let lastGroup = "";
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900/80 shadow-2xl backdrop-blur-xl">
+    <div
+      ref={rootRef}
+      className="flex max-h-[384px] w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900/80 shadow-2xl backdrop-blur-xl"
+    >
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
         <Search className="h-4 w-4 shrink-0 text-neutral-400" />
         <input
@@ -121,7 +182,7 @@ export function CommandPalette() {
         />
       </div>
 
-      <div ref={listRef} className="flex-1 overflow-y-auto px-2 py-2">
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {results.length === 0 && (
           <div className="px-3 py-8 text-center text-sm text-neutral-500">
             Nenhum resultado encontrado
