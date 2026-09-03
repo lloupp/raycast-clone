@@ -1,18 +1,23 @@
 import {
   Calculator,
+  Code,
+  FileText,
+  Mail,
   Search,
   Settings,
   Terminal,
-  FileText,
-  Clipboard,
-  Globe,
-  Mail,
-  Calendar,
-  Github,
-  Moon,
-  Image,
   type LucideIcon,
 } from "lucide-react";
+
+/** Programa a executar por sistema operacional. O indice 0 e o executavel. */
+export type LaunchTarget = {
+  linux: string[];
+  windows: string[];
+};
+
+export type CommandAction =
+  | { kind: "url"; url: string }
+  | { kind: "launch"; target: LaunchTarget };
 
 export type Command = {
   id: string;
@@ -21,6 +26,7 @@ export type Command = {
   icon: LucideIcon;
   shortcut?: string;
   group: string;
+  action: CommandAction;
 };
 
 export const mockCommands: Command[] = [
@@ -29,52 +35,66 @@ export const mockCommands: Command[] = [
     title: "Calculadora",
     subtitle: "Abrir a calculadora do sistema",
     icon: Calculator,
-    shortcut: "↵",
     group: "Aplicativos",
-  },
-  {
-    id: "search-google",
-    title: "Buscar no Google",
-    subtitle: "Pesquisar na web",
-    icon: Search,
-    group: "Web",
-  },
-  {
-    id: "settings",
-    title: "Configurações",
-    subtitle: "Preferências do aplicativo",
-    icon: Settings,
-    shortcut: "⌘,",
-    group: "Sistema",
+    action: {
+      kind: "launch",
+      target: { linux: ["gnome-calculator"], windows: ["calc.exe"] },
+    },
   },
   {
     id: "terminal",
     title: "Abrir Terminal",
-    subtitle: "Novo terminal na pasta atual",
+    subtitle: "Nova janela de terminal",
     icon: Terminal,
     group: "Aplicativos",
+    action: {
+      kind: "launch",
+      target: {
+        linux: ["x-terminal-emulator"],
+        windows: ["cmd.exe", "/c", "start", "", "cmd.exe"],
+      },
+    },
   },
   {
     id: "notes",
     title: "Nova Nota",
-    subtitle: "Criar uma nota rápida",
+    subtitle: "Editor de texto do sistema",
     icon: FileText,
-    shortcut: "⌘N",
     group: "Produtividade",
+    action: {
+      kind: "launch",
+      target: { linux: ["gedit"], windows: ["notepad.exe"] },
+    },
   },
   {
-    id: "clipboard",
-    title: "Histórico da Área de Transferência",
-    subtitle: "Ver itens copiados recentemente",
-    icon: Clipboard,
-    group: "Produtividade",
+    id: "settings",
+    title: "Configurações do Sistema",
+    subtitle: "Painel de configurações do SO",
+    icon: Settings,
+    group: "Sistema",
+    action: {
+      kind: "launch",
+      target: {
+        linux: ["gnome-control-center"],
+        windows: ["explorer.exe", "ms-settings:"],
+      },
+    },
   },
   {
-    id: "browser",
-    title: "Abrir Navegador",
-    subtitle: "Nova janela do navegador padrão",
-    icon: Globe,
-    group: "Aplicativos",
+    id: "search-google",
+    title: "Buscar no Google",
+    subtitle: "google.com",
+    icon: Search,
+    group: "Web",
+    action: { kind: "url", url: "https://www.google.com" },
+  },
+  {
+    id: "github",
+    title: "Abrir GitHub",
+    subtitle: "github.com",
+    icon: Code,
+    group: "Web",
+    action: { kind: "url", url: "https://github.com" },
   },
   {
     id: "mail",
@@ -82,34 +102,6 @@ export const mockCommands: Command[] = [
     subtitle: "Novo e-mail no cliente padrão",
     icon: Mail,
     group: "Produtividade",
-  },
-  {
-    id: "calendar",
-    title: "Agenda de Hoje",
-    subtitle: "Ver eventos do dia",
-    icon: Calendar,
-    group: "Produtividade",
-  },
-  {
-    id: "github",
-    title: "Abrir GitHub",
-    subtitle: "github.com",
-    icon: Github,
-    group: "Web",
-  },
-  {
-    id: "dark-mode",
-    title: "Alternar Tema",
-    subtitle: "Trocar entre modo claro e escuro",
-    icon: Moon,
-    group: "Sistema",
-  },
-  {
-    id: "screenshot",
-    title: "Capturar Tela",
-    subtitle: "Tirar um screenshot",
-    icon: Image,
-    shortcut: "⌘⇧4",
-    group: "Sistema",
+    action: { kind: "url", url: "mailto:" },
   },
 ];

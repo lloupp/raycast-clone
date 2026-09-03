@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Fuse from "fuse.js";
 import { Search } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { mockCommands, type Command } from "../data/mockCommands";
+
+async function hideWindow() {
+  try {
+    await getCurrentWindow().hide();
+  } catch (err) {
+    console.error("falha ao esconder a janela:", err);
+  }
+}
 
 const fuse = new Fuse(mockCommands, {
   keys: ["title", "subtitle", "group"],
@@ -27,6 +39,47 @@ export function CommandPalette() {
     inputRef.current?.focus();
   }, []);
 
+  // A janela e reaproveitada entre aberturas: limpa a busca ao reganhar foco.
+  // Fora do Tauri (ex.: `npm run dev` no navegador) a API nao existe; ignora.
+  useEffect(() => {
+    let unlisten: UnlistenFn | undefined;
+    let cancelled = false;
+
+    try {
+      void getCurrentWindow()
+        .onFocusChanged(({ payload: focused }) => {
+          if (focused) {
+            setQuery("");
+            inputRef.current?.focus();
+          }
+        })
+        .then((fn) => {
+          if (cancelled) fn();
+          else unlisten = fn;
+        });
+    } catch (err) {
+      console.warn("API de janela indisponivel:", err);
+    }
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
+  async function execute(command: Command) {
+    try {
+      if (command.action.kind === "url") {
+        await openUrl(command.action.url);
+      } else {
+        await invoke("launch_app", { target: command.action.target });
+      }
+      await hideWindow();
+    } catch (err) {
+      console.error(`falha ao executar \`${command.id}\`:`, err);
+    }
+  }
+
   useEffect(() => {
     const activeEl = listRef.current?.querySelector(`[data-index="${activeIndex}"]`);
     activeEl?.scrollIntoView({ block: "nearest" });
@@ -42,10 +95,11 @@ export function CommandPalette() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       const selected = results[activeIndex];
-      if (selected) console.log("execute:", selected.id);
+      if (selected) void execute(selected);
     } else if (e.key === "Escape") {
       e.preventDefault();
       setQuery("");
+      void hideWindow();
     }
   }
 
@@ -89,7 +143,7 @@ export function CommandPalette() {
               <div
                 data-index={index}
                 onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => console.log("execute:", command.id)}
+                onClick={() => void execute(command)}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${
                   index === activeIndex ? "bg-white/10" : ""
                 }`}
