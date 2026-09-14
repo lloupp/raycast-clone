@@ -46,18 +46,6 @@ fn spawn(program: &str, args: &[&str]) -> Result<(), String> {
         .map_err(|error| format!("Não foi possível iniciar {program}: {error}"))
 }
 
-fn spawn_with_path(program: &str, args: &[&str], path: &str) -> Result<(), String> {
-    Command::new(program)
-        .args(args)
-        .arg(path)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| format!("Não foi possível iniciar {program}: {error}"))
-}
-
 fn spawn_first(candidates: &[(&str, &[&str])]) -> Result<(), String> {
     let mut last_error = String::from("nenhum aplicativo compatível encontrado");
 
@@ -72,23 +60,8 @@ fn spawn_first(candidates: &[(&str, &[&str])]) -> Result<(), String> {
 }
 
 fn open_target(target: &str) -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        return spawn("rundll32.exe", &["url.dll,FileProtocolHandler", target]);
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        return spawn("open", &[target]);
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        return spawn("xdg-open", &[target]);
-    }
-
-    #[allow(unreachable_code)]
-    Err(String::from("Sistema operacional não suportado"))
+    tauri_plugin_opener::open_url(target, None::<&str>)
+        .map_err(|error| format!("Não foi possível abrir {target}: {error}"))
 }
 
 fn open_calculator() -> Result<(), String> {
@@ -333,24 +306,8 @@ fn discover_apps() -> Vec<AppEntry> {
 }
 
 fn launch_app_path(path: &str) -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        return open_target(path);
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        return spawn_with_path("open", &[], path);
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        return spawn_with_path("gio", &["launch"], path)
-            .or_else(|_| spawn_with_path("xdg-open", &[], path));
-    }
-
-    #[allow(unreachable_code)]
-    Err(String::from("Sistema operacional não suportado"))
+    tauri_plugin_opener::open_path(path, None::<&str>)
+        .map_err(|error| format!("Não foi possível abrir o aplicativo: {error}"))
 }
 
 #[tauri::command]
