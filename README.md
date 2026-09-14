@@ -4,20 +4,22 @@ Launcher de desktop rápido, orientado a teclado e inspirado no fluxo de trabalh
 
 ## Estado atual
 
-O protótipo original foi convertido em um aplicativo Tauri funcional. `Ctrl/Cmd + Space` abre ou fecha o launcher, a pesquisa usa fuzzy search e os comandos abaixo executam ações reais no sistema operacional:
+`Ctrl/Cmd + Space` abre ou fecha o launcher. A pesquisa usa fuzzy search sobre comandos internos e aplicativos instalados descobertos pelo backend nativo.
 
-- calculadora;
-- terminal;
-- editor de texto;
-- navegador padrão;
-- nova mensagem de e-mail;
-- Google Calendar;
-- GitHub;
+O launcher atualmente oferece:
+
+- descoberta e abertura de aplicativos instalados;
+- favoritos persistentes;
+- histórico de comandos e apps recentes;
+- calculadora do sistema;
+- terminal e editor de texto;
+- navegador padrão e nova mensagem de e-mail;
+- Google Calendar e GitHub;
 - configurações do sistema;
 - ferramenta de captura de tela;
 - pesquisa dinâmica no Google.
 
-O backend mantém uma allowlist explícita de comandos. O frontend não envia comandos de shell arbitrários.
+No Windows, aplicativos são descobertos pelos atalhos dos menus Iniciar do usuário e do sistema. No macOS, são descobertos em `/Applications` e `~/Applications`. No Linux, são lidos os arquivos `.desktop` dos diretórios padrão.
 
 ## Atalhos
 
@@ -25,7 +27,8 @@ O backend mantém uma allowlist explícita de comandos. O frontend não envia co
 | --- | --- |
 | `Ctrl/Cmd + Space` | abrir ou fechar o launcher |
 | `↑` / `↓` | navegar pelos resultados |
-| `Enter` | executar o comando selecionado |
+| `Enter` | executar o item selecionado |
+| `Alt + F` | adicionar ou remover o item dos favoritos |
 | `Esc` | fechar o launcher |
 
 ## Desenvolvimento
@@ -46,11 +49,11 @@ npm run tauri build
 
 ## Arquitetura
 
-- `src/components/CommandPalette.tsx`: busca, navegação por teclado, acessibilidade e execução.
-- `src/data/commands.ts`: catálogo de comandos apresentados ao usuário.
-- `src-tauri/src/lib.rs`: atalho global, janela e execução segura das integrações nativas.
+- `src/components/CommandPalette.tsx`: descoberta, busca, favoritos, recentes, navegação por teclado, acessibilidade e execução.
+- `src/data/commands.ts`: catálogo de comandos internos.
+- `src-tauri/src/lib.rs`: atalho global, descoberta segura de aplicativos, janela e integrações nativas.
 - `src-tauri/tauri.conf.json`: configuração da janela, bundle e CSP.
 
 ## Segurança
 
-A execução nativa é limitada a IDs conhecidos no backend. URLs usadas pelo aplicativo são construídas internamente e a aplicação possui CSP de produção configurada no Tauri.
+Comandos internos usam uma allowlist explícita no backend. Aplicativos só podem ser lançados se o caminho solicitado estiver presente em uma nova descoberta feita pelo próprio backend; o frontend não recebe uma primitiva de execução arbitrária de shell. URLs usadas pelos comandos são construídas internamente e a aplicação possui CSP de produção configurada no Tauri.
