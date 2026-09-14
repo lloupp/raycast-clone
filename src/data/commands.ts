@@ -2,7 +2,6 @@ import {
   Calculator,
   Calendar,
   FileText,
-  Github,
   Globe,
   Image,
   Mail,
@@ -69,7 +68,7 @@ export const commands: Command[] = [
     id: "github",
     title: "Abrir GitHub",
     subtitle: "Abrir github.com no navegador padrão",
-    icon: Github,
+    icon: Globe,
     group: "Web",
   },
   {
