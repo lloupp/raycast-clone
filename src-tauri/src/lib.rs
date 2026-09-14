@@ -1,4 +1,9 @@
-use std::process::{Command, Stdio};
+use serde::Serialize;
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+};
 use tauri::{Manager, WebviewWindow, WindowEvent};
 use tauri_plugin_global_shortcut::ShortcutState;
 
@@ -15,6 +20,12 @@ const SUPPORTED_COMMANDS: &[&str] = &[
     "search-google",
 ];
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+struct AppEntry {
+    id: String,
+    title: String,
+}
+
 fn toggle_window(window: &WebviewWindow) {
     if window.is_visible().unwrap_or(false) {
         let _ = window.hide();
@@ -27,6 +38,18 @@ fn toggle_window(window: &WebviewWindow) {
 fn spawn(program: &str, args: &[&str]) -> Result<(), String> {
     Command::new(program)
         .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("Não foi possível iniciar {program}: {error}"))
+}
+
+fn spawn_with_path(program: &str, args: &[&str], path: &str) -> Result<(), String> {
+    Command::new(program)
+        .args(args)
+        .arg(path)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -195,6 +218,159 @@ fn run_command(command_id: &str, payload: Option<&str>) -> Result<(), String> {
     }
 }
 
+fn has_extension(path: &Path, extensions: &[&str]) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            extensions
+                .iter()
+                .any(|expected| extension.eq_ignore_ascii_case(expected))
+        })
+}
+
+fn should_ignore_app(title: &str) -> bool {
+    let normalized = title.to_ascii_lowercase();
+    ["uninstall", "desinstalar", "help", "readme", "website", "documentation"]
+        .iter()
+        .any(|blocked| normalized.contains(blocked))
+}
+
+fn collect_app_paths(
+    directory: &Path,
+    extensions: &[&str],
+    max_depth: usize,
+    depth: usize,
+    output: &mut Vec<PathBuf>,
+) {
+    if depth > max_depth {
+        return;
+    }
+
+    let Ok(entries) = fs::read_dir(directory) else {
+        return;
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        if has_extension(&path, extensions) {
+            output.push(path);
+            continue;
+        }
+
+        if path.is_dir() {
+            collect_app_paths(&path, extensions, max_depth, depth + 1, output);
+        }
+    }
+}
+
+fn app_roots() -> (Vec<PathBuf>, Vec<&'static str>) {
+    #[cfg(target_os = "windows")]
+    {
+        let mut roots = Vec::new();
+        if let Some(app_data) = env::var_os("APPDATA") {
+            roots.push(PathBuf::from(app_data).join("Microsoft/Windows/Start Menu/Programs"));
+        }
+        if let Some(program_data) = env::var_os("PROGRAMDATA") {
+            roots.push(PathBuf::from(program_data).join("Microsoft/Windows/Start Menu/Programs"));
+        }
+        return (roots, vec!["lnk"]);
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let mut roots = vec![PathBuf::from("/Applications")];
+        if let Some(home) = env::var_os("HOME") {
+            roots.push(PathBuf::from(home).join("Applications"));
+        }
+        return (roots, vec!["app"]);
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let mut roots = vec![PathBuf::from("/usr/share/applications")];
+        if let Some(home) = env::var_os("HOME") {
+            roots.push(PathBuf::from(home).join(".local/share/applications"));
+        }
+        return (roots, vec!["desktop"]);
+    }
+
+    #[allow(unreachable_code)]
+    (Vec::new(), Vec::new())
+}
+
+fn discover_apps() -> Vec<AppEntry> {
+    let (roots, extensions) = app_roots();
+    let mut paths = Vec::new();
+
+    for root in roots {
+        collect_app_paths(&root, &extensions, 8, 0, &mut paths);
+    }
+
+    let mut apps = paths
+        .into_iter()
+        .filter_map(|path| {
+            let title = path.file_stem()?.to_string_lossy().trim().to_string();
+            if title.is_empty() || should_ignore_app(&title) {
+                return None;
+            }
+
+            Some(AppEntry {
+                id: path.to_string_lossy().into_owned(),
+                title,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    apps.sort_by(|left, right| {
+        left.title
+            .to_ascii_lowercase()
+            .cmp(&right.title.to_ascii_lowercase())
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    apps.dedup_by(|left, right| left.title.eq_ignore_ascii_case(&right.title));
+    apps
+}
+
+fn launch_app_path(path: &str) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        return spawn_with_path("cmd.exe", &["/C", "start", ""], path);
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        return spawn_with_path("open", &[], path);
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        return spawn_with_path("gio", &["launch"], path)
+            .or_else(|_| spawn_with_path("xdg-open", &[], path));
+    }
+
+    #[allow(unreachable_code)]
+    Err(String::from("Sistema operacional não suportado"))
+}
+
+#[tauri::command]
+fn list_apps() -> Vec<AppEntry> {
+    discover_apps()
+}
+
+#[tauri::command]
+fn launch_app(app_id: String, webview_window: WebviewWindow) -> Result<(), String> {
+    let app = discover_apps()
+        .into_iter()
+        .find(|candidate| candidate.id == app_id)
+        .ok_or_else(|| String::from("Aplicativo não encontrado ou não permitido"))?;
+
+    launch_app_path(&app.id)?;
+    webview_window
+        .hide()
+        .map_err(|error| format!("Aplicativo aberto, mas não foi possível fechar o launcher: {error}"))
+}
+
 #[tauri::command]
 fn execute_command(
     command_id: String,
@@ -235,7 +411,12 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![execute_command, hide_launcher])
+        .invoke_handler(tauri::generate_handler![
+            execute_command,
+            hide_launcher,
+            list_apps,
+            launch_app
+        ])
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 let window_for_focus = window.clone();
@@ -267,5 +448,18 @@ mod tests {
     #[test]
     fn rejects_unknown_commands_before_execution() {
         assert!(!SUPPORTED_COMMANDS.contains(&"rm-everything"));
+    }
+
+    #[test]
+    fn app_extension_matching_is_case_insensitive() {
+        assert!(has_extension(Path::new("Example.LNK"), &["lnk"]));
+        assert!(!has_extension(Path::new("Example.exe"), &["lnk"]));
+    }
+
+    #[test]
+    fn ignores_uninstaller_shortcuts() {
+        assert!(should_ignore_app("Uninstall Example"));
+        assert!(should_ignore_app("Desinstalar Exemplo"));
+        assert!(!should_ignore_app("Visual Studio Code"));
     }
 }
