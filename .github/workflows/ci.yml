@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, "gauntlet/**"]
+    branches: [master]
   pull_request:
 
 permissions:
@@ -28,6 +28,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Frontend checks
         run: npm run build
