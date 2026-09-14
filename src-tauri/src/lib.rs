@@ -335,7 +335,7 @@ fn discover_apps() -> Vec<AppEntry> {
 fn launch_app_path(path: &str) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        return spawn_with_path("cmd.exe", &["/C", "start", ""], path);
+        return open_target(path);
     }
 
     #[cfg(target_os = "macos")]
